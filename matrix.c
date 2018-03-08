@@ -219,8 +219,8 @@ void circle(struct matrix * edges, int x, int y, int z, int r){
   int yy;
   int xp = x + r;
   int yp = y;
-  for(t = 0; t < 1; t += 0.01){
-    xx = x + r * cos(t * 2 * PI);
+  for(t = 0; t < 1; t += 0.0001){
+    xx = x + r * cos(t * 4 * PI);
     yy = y + r * sin(t * 2 * PI);
     
     add_entry(edges, xx, yy, z, 1, xp, yp, z, 1);
