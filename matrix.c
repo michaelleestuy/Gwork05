@@ -219,7 +219,6 @@ void circle(struct matrix * edges, double x, double y, double z, double r){
   for(t = 0; t < 360; t += 1){
     xx = x + r * cos(t * PI / 180);
     yy = y + r * sin(t * PI / 180);
-    printf("Line from: (%f, %f) to (%f, %f)\n", xx, yy, x + r * cos((t + 1) * PI / 180), y + r * sin((t + 1) * PI / 180));
     add_entry(edges, xx, yy, z, 1, x + r * cos((t + 1) * PI / 180) , y + r * sin((t + 1) * PI / 180), z, 1);
   }
 }
