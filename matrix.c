@@ -213,21 +213,100 @@ void save(char image[500][500], char* file){
   }
 }
 
-void circle(struct matrix * edges, int x, int y, int z, int r){
+void circle(struct matrix * edges, double x, double y, double z, double r){
   double t;
-  int xx;
-  int yy;
-  int xp = x + r;
-  int yp = y;
-  for(t = 0; t < 1; t += 0.0001){
-    xx = x + r * cos(t * 4 * PI);
-    yy = y + r * sin(t * 2 * PI);
-    
-    add_entry(edges, xx, yy, z, 1, xp, yp, z, 1);
-    xp = xx;
-    yp = yy;
+  double xx, yy;
+  for(t = 0; t < 360; t += 1){
+    xx = x + r * cos(t * PI / 180);
+    yy = y + r * sin(t * PI / 180);
+    printf("Line from: (%f, %f) to (%f, %f)\n", xx, yy, x + r * cos((t + 1) * PI / 180), y + r * sin((t + 1) * PI / 180));
+    add_entry(edges, xx, yy, z, 1, x + r * cos((t + 1) * PI / 180) , y + r * sin((t + 1) * PI / 180), z, 1);
   }
 }
+
+void hermite(struct matrix * edges, double x0, double y0, double x1, double y1, double rx0, double ry0, double rx1, double ry1){
+  struct matrix * herm = make_new();
+  add_entry(herm, 2, -3, 0, 1, -1, 3, 0, 0);
+  add_entry(herm, 1, -2, 1, 0, 1, -1, 0, 0);
+
+  
+  struct matrix * xcoeffs = make_new();
+  add_single(xcoeffs, x0, x1, rx0, rx1);
+  multiply(herm, xcoeffs);
+  double xa = xcoeffs->array[0][0];
+  double xb = xcoeffs->array[1][0];
+  double xc = xcoeffs->array[2][0];
+  double xd = xcoeffs->array[3][0];
+
+  
+  struct matrix * ycoeffs = make_new();
+  add_single(ycoeffs, y0, y1, ry0, ry1);
+  multiply(herm, ycoeffs);
+  double ya = ycoeffs->array[0][0];
+  double yb = ycoeffs->array[1][0];
+  double yc = ycoeffs->array[2][0];
+  double yd = ycoeffs->array[3][0];
+
+
+  double X, Y;
+  double t;
+
+  for(t = 0; t < 1; t+= .01){
+    X = xa * t * t * t + xb * t * t + xc * t + xd;
+    Y = ya * t * t * t + yb * t * t + yc * t + yd;
+
+    printf("X: %f Y: %f \n", X, Y);
+    
+    add_entry(edges, X, Y, 0, 1,
+	      xa * (t + .05) * (t + .05) * (t + .05) + xb * (t + .05) * (t + .05) + xc * (t + .05) + xd,
+	      ya * (t + .05) * (t + .05) * (t + .05) + yb * (t + .05) * (t + .05) + yc * (t + .05) + yd, 0, 1);
+   
+  }
+  
+
+}
+
+void bezier(struct matrix * edges, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3){
+  struct matrix * bez = make_new();
+  add_entry(bez, -1, 3, -3, 1, 3, -6, 3, 0);
+  add_entry(bez, -3, 3, 0, 0, 1, 0, 0, 0);
+
+  
+  struct matrix * xcoeffs = make_new();
+  add_single(xcoeffs, x0, x1, x2, x3);
+  multiply(bez, xcoeffs);
+  double xa = xcoeffs->array[0][0];
+  double xb = xcoeffs->array[1][0];
+  double xc = xcoeffs->array[2][0];
+  double xd = xcoeffs->array[3][0];
+
+  
+  struct matrix * ycoeffs = make_new();
+  add_single(ycoeffs, y0, y1, y2, y3);
+  multiply(bez, ycoeffs);
+  double ya = ycoeffs->array[0][0];
+  double yb = ycoeffs->array[1][0];
+  double yc = ycoeffs->array[2][0];
+  double yd = ycoeffs->array[3][0];
+
+  
+  double X, Y;
+  double t;
+
+  for(t = 0; t < 1; t+= .01){
+    X = xa * t * t * t + xb * t * t + xc * t + xd;
+    Y = ya * t * t * t + yb * t * t + yc * t + yd;
+
+    add_entry(edges, X, Y, 0, 1,
+	      xa * (t + .05) * (t + .05) * (t + .05) + xb * (t + .05) * (t + .05) + xc * (t + .05) + xd,
+	      ya * (t + .05) * (t + .05) * (t + .05) + yb * (t + .05) * (t + .05) + yc * (t + .05) + yd, 0, 1);
+
+  }  
+
+
+
+}
+
 
 
 void main(){
@@ -249,6 +328,7 @@ void main(){
 
   char* token;
 
+  
   token = strtok(input, " \n");
   while(token != NULL){
     if(strcmp(token, "line") == 0){
@@ -327,18 +407,55 @@ void main(){
     }
     else if(strcmp(token, "circle") == 0){
       token = strtok(NULL, " \n");
-      int x = atoi(token);
+      int x = atof(token);
       token = strtok(NULL, " \n");
-      int y = atoi(token);
+      int y = atof(token);
       token = strtok(NULL, " \n");
-      int z = atoi(token);
+      int z = atof(token);
       token = strtok(NULL, " \n");
-      int r = atoi(token);
+      int r = atof(token);
       circle(edges, x, y, z, r);
+    }
+    else if(strcmp(token, "hermite") == 0){
+      token = strtok(NULL, " \n");
+      int x0 = atoi(token);
+      token = strtok(NULL, " \n");
+      int y0 = atoi(token);
+      token = strtok(NULL, " \n");
+      int x1 = atoi(token);
+      token = strtok(NULL, " \n");
+      int y1 = atoi(token);
+      token = strtok(NULL, " \n");
+      int rx0 = atof(token);
+      token = strtok(NULL, " \n");
+      int ry0 = atof(token);
+      token = strtok(NULL, " \n");
+      int rx1 = atof(token);
+      token = strtok(NULL, " \n");
+      int ry1 = atof(token);
+      hermite(edges, x0, y0, x1, y1, rx0, ry0, rx1, ry1);
+    }
+    else if(strcmp(token, "bezier") == 0){
+      token = strtok(NULL, " \n");
+      int x0 = atoi(token);
+      token = strtok(NULL, " \n");
+      int y0 = atoi(token);
+      token = strtok(NULL, " \n");
+      int x1 = atoi(token);
+      token = strtok(NULL, " \n");
+      int y1 = atoi(token);
+      token = strtok(NULL, " \n");
+      int x2 = atof(token);
+      token = strtok(NULL, " \n");
+      int y2 = atof(token);
+      token = strtok(NULL, " \n");
+      int x3 = atof(token);
+      token = strtok(NULL, " \n");
+      int y3 = atof(token);
+      bezier(edges, x0, y0, x1, y1, x2, y2, x3, y3);
     }
     token = strtok(NULL, " \n");
   }
-
-  
+ 
   
 }
